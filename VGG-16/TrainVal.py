@@ -8,7 +8,7 @@ import numpy as np
 import model
 import cifar10_Input
 
-MAX_STEP=30000
+MAX_STEP=20000
 learning_rate =0.1
 BATCH_SIZE = 64
 #每隔step步打印一下
@@ -21,6 +21,7 @@ SNAPSTEP =5000
 
 data_dir = "/data/dataset/CIFAR-10/cifar-10-batches-bin"
 log_dir= "./logs/"
+checkpoint_path = os.path.join(log_dir, "train/model.ckpt")
 
 
 
@@ -37,7 +38,9 @@ def run_training():
     train_op = model.training(train_loss, learning_rate)
     train_acc = model.evaluation(train_logits, label_batch, 10)
 
+    saver = tf.train.Saver()
     summary_op = tf.summary.merge_all()
+
 
     with tf.Session(graph=tf.get_default_graph()) as sess:
 
@@ -51,11 +54,12 @@ def run_training():
 
 
 
-        saver = tf.train.Saver()
-
-
-
         sess.run(init_op)
+
+        ckpt = tf.train.get_checkpoint_state(os.path.join(log_dir,"train/"))
+        #if checkpoint exits ,restore from checkpoint
+        if ckpt and ckpt.model_checkpoint_path:
+            saver.restore(sess,ckpt.model_checkpoint_path)
 
         coord = tf.train.Coordinator()
         threads = tf.train.start_queue_runners(sess=sess,coord=coord)
@@ -94,7 +98,7 @@ def run_training():
 
                 if step % SNAPSTEP ==0 or (step+1)==MAX_STEP:
 
-                    checkpoint_path = os.path.join(log_dir, "train/model.ckpt")
+
                     saver.save(sess, checkpoint_path, global_step=step)
 
 
